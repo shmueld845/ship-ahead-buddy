@@ -56,85 +56,47 @@ export type Database = {
         }
         Relationships: []
       }
-      shipment_items: {
-        Row: {
-          created_at: string
-          id: string
-          lead_time_days: number
-          notified_at: string | null
-          process_date: string | null
-          product_name: string
-          quantity: number | null
-          ship_date: string
-          shipment_id: string
-          status: Database["public"]["Enums"]["item_status"]
-          updated_at: string
-          vendor: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          lead_time_days: number
-          notified_at?: string | null
-          process_date?: string | null
-          product_name: string
-          quantity?: number | null
-          ship_date: string
-          shipment_id: string
-          status?: Database["public"]["Enums"]["item_status"]
-          updated_at?: string
-          vendor?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          lead_time_days?: number
-          notified_at?: string | null
-          process_date?: string | null
-          product_name?: string
-          quantity?: number | null
-          ship_date?: string
-          shipment_id?: string
-          status?: Database["public"]["Enums"]["item_status"]
-          updated_at?: string
-          vendor?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shipment_items_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       shipments: {
         Row: {
           created_at: string
           created_by: string
+          created_notified_at: string | null
           customer: string | null
           id: string
           notes: string | null
           order_number: string
+          reminder_date: string | null
+          reminder_notified_at: string | null
+          ship_date: string
+          status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          created_notified_at?: string | null
           customer?: string | null
           id?: string
           notes?: string | null
           order_number: string
+          reminder_date?: string | null
+          reminder_notified_at?: string | null
+          ship_date: string
+          status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          created_notified_at?: string | null
           customer?: string | null
           id?: string
           notes?: string | null
           order_number?: string
+          reminder_date?: string | null
+          reminder_notified_at?: string | null
+          ship_date?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -175,7 +137,6 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "processor" | "rep"
-      item_status: "pending" | "ready" | "processing" | "shipped" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -304,7 +265,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "processor", "rep"],
-      item_status: ["pending", "ready", "processing", "shipped", "cancelled"],
     },
   },
 } as const

@@ -3,29 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
-import { Inbox, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { Inbox, AlertCircle, Clock, CheckCircle2, Save } from "lucide-react";
 
-type QueueItem = {
+type Shipment = {
   id: string;
-  product_name: string;
-  vendor: string | null;
-  quantity: number | null;
+  order_number: string;
+  customer: string | null;
+  notes: string | null;
   ship_date: string;
-  lead_time_days: number;
-  process_date: string;
+  reminder_date: string | null;
   status: string;
-  shipments: { order_number: string; customer: string | null; notes: string | null };
+  created_at: string;
 };
 
-const STATUSES = ["pending", "ready", "processing", "shipped", "cancelled"];
+const STATUSES = ["pending", "processing", "shipped", "cancelled"];
 
 export default function Queue() {
-  const [items, setItems] = useState<QueueItem[]>([]);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"ready" | "all">("ready");
+  const [filter, setFilter] = useState<"due" | "all">("due");
 
   useEffect(() => { load(); }, [filter]);
 
@@ -33,23 +34,23 @@ export default function Queue() {
     setLoading(true);
     const today = new Date().toISOString().slice(0, 10);
     let q = supabase
-      .from("shipment_items")
-      .select("id, product_name, vendor, quantity, ship_date, lead_time_days, process_date, status, shipments!inner(order_number, customer, notes)")
-      .order("process_date", { ascending: true });
-    if (filter === "ready") {
-      q = q.lte("process_date", today).in("status", ["pending", "ready", "processing"]);
+      .from("shipments")
+      .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at")
+      .order("ship_date", { ascending: true });
+    if (filter === "due") {
+      q = q.in("status", ["pending", "processing"]);
     }
     const { data, error } = await q;
     setLoading(false);
     if (error) return toast.error(error.message);
-    setItems((data as any) ?? []);
-  };
-
-  const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("shipment_items").update({ status: status as any }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Status updated");
-    load();
+    let list = (data as Shipment[]) ?? [];
+    if (filter === "due") {
+      // Show items where reminder is set & due, OR no reminder set yet (Dan needs to set one)
+      list = list.filter(
+        (s) => !s.reminder_date || s.reminder_date <= today || s.ship_date <= today
+      );
+    }
+    setShipments(list);
   };
 
   return (
@@ -60,75 +61,116 @@ export default function Queue() {
             <Inbox className="w-7 h-7" /> Processing queue
           </h1>
           <p className="text-muted-foreground mt-1">
-            Items where today is on or after the processing date (ship date − lead time).
+            Set a reminder date on each shipment. You'll be emailed on that date.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant={filter === "ready" ? "default" : "outline"} size="sm" onClick={() => setFilter("ready")}>
-            Ready now
+          <Button variant={filter === "due" ? "default" : "outline"} size="sm" onClick={() => setFilter("due")}>
+            Needs attention
           </Button>
           <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>
-            All items
+            All
           </Button>
         </div>
       </div>
 
       {loading ? (
         <p className="text-muted-foreground">Loading…</p>
-      ) : items.length === 0 ? (
+      ) : shipments.length === 0 ? (
         <Card className="p-12 text-center">
           <CheckCircle2 className="w-10 h-10 mx-auto text-success mb-3" />
           <h3 className="font-semibold mb-1">All caught up</h3>
-          <p className="text-muted-foreground">No items need processing right now.</p>
+          <p className="text-muted-foreground">No shipments need attention right now.</p>
         </Card>
       ) : (
         <div className="space-y-3">
-          {items.map((i) => {
-            const days = differenceInDays(parseISO(i.process_date), new Date());
-            const isReady = days <= 0;
-            return (
-              <Card key={i.id} className="p-5">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="font-mono font-semibold">#{i.shipments.order_number}</span>
-                      {isReady ? (
-                        <Badge className="bg-accent text-accent-foreground hover:bg-accent">
-                          <AlertCircle className="w-3 h-3 mr-1" /> Ready
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <Clock className="w-3 h-3 mr-1" /> in {days}d
-                        </Badge>
-                      )}
-                      {i.shipments.customer && (
-                        <span className="text-sm text-muted-foreground">· {i.shipments.customer}</span>
-                      )}
-                    </div>
-                    <p className="font-medium">
-                      {i.product_name}
-                      {i.quantity ? <span className="text-muted-foreground font-normal"> × {i.quantity}</span> : null}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {i.vendor && <>Vendor: {i.vendor} · </>}
-                      Process by {format(parseISO(i.process_date), "MMM d")} · Ship {format(parseISO(i.ship_date), "MMM d")} · Lead {i.lead_time_days}d
-                    </p>
-                    {i.shipments.notes && (
-                      <p className="text-sm text-muted-foreground mt-2 italic">"{i.shipments.notes}"</p>
-                    )}
-                  </div>
-                  <Select value={i.status} onValueChange={(v) => updateStatus(i.id, v)}>
-                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </Card>
-            );
-          })}
+          {shipments.map((s) => <QueueRow key={s.id} s={s} onChange={load} />)}
         </div>
       )}
     </div>
+  );
+}
+
+function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
+  const [reminder, setReminder] = useState(s.reminder_date ?? "");
+  const [saving, setSaving] = useState(false);
+  const today = new Date();
+  const ship = parseISO(s.ship_date);
+  const daysToShip = differenceInDays(ship, today);
+  const reminderDue = s.reminder_date && parseISO(s.reminder_date) <= today;
+  const noReminder = !s.reminder_date;
+
+  const saveReminder = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("shipments")
+      .update({ reminder_date: reminder || null, reminder_notified_at: null })
+      .eq("id", s.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Reminder saved");
+    onChange();
+  };
+
+  const updateStatus = async (status: string) => {
+    const { error } = await supabase.from("shipments").update({ status }).eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Status updated");
+    onChange();
+  };
+
+  return (
+    <Card className="p-5 space-y-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="font-mono font-semibold text-lg">#{s.order_number}</span>
+            {noReminder && (
+              <Badge className="bg-accent text-accent-foreground hover:bg-accent">
+                <AlertCircle className="w-3 h-3 mr-1" /> Set reminder
+              </Badge>
+            )}
+            {reminderDue && (
+              <Badge className="bg-accent text-accent-foreground hover:bg-accent">
+                <AlertCircle className="w-3 h-3 mr-1" /> Reminder due
+              </Badge>
+            )}
+            <Badge variant="secondary" className="capitalize">{s.status}</Badge>
+          </div>
+          {s.customer && <p className="text-sm text-muted-foreground">{s.customer}</p>}
+          <p className="text-sm mt-1">
+            Ship date: <span className="font-medium">{format(ship, "MMM d, yyyy")}</span>{" "}
+            <span className="text-muted-foreground">
+              ({daysToShip >= 0 ? `in ${daysToShip}d` : `${-daysToShip}d ago`})
+            </span>
+          </p>
+          {s.notes && <p className="text-sm text-muted-foreground italic mt-2">"{s.notes}"</p>}
+        </div>
+        <Select value={s.status} onValueChange={updateStatus}>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {STATUSES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="border-t pt-4 flex items-end gap-3 flex-wrap">
+        <div className="space-y-1.5 flex-1 min-w-[180px]">
+          <Label htmlFor={`r-${s.id}`} className="text-xs flex items-center gap-1.5">
+            <Clock className="w-3 h-3" /> Remind me on
+          </Label>
+          <Input
+            id={`r-${s.id}`}
+            type="date"
+            value={reminder}
+            onChange={(e) => setReminder(e.target.value)}
+            max={s.ship_date}
+          />
+        </div>
+        <Button onClick={saveReminder} disabled={saving || reminder === (s.reminder_date ?? "")}>
+          <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </Card>
   );
 }
