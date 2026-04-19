@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -67,14 +67,20 @@ Deno.serve(async (req) => {
 });
 
 async function sendEmail(to: string, subject: string, html: string) {
-  if (!LOVABLE_API_KEY) return { ok: false, error: "LOVABLE_API_KEY not configured" };
+  if (!RESEND_API_KEY) return { ok: false, error: "RESEND_API_KEY not configured" };
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/email/send", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ to, subject, html }),
+      headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "ShipQueue <onboarding@resend.dev>",
+        to: [to],
+        subject,
+        html,
+      }),
     });
-    if (!res.ok) return { ok: false, error: `${res.status} ${await res.text()}` };
+    const text = await res.text();
+    if (!res.ok) return { ok: false, error: `${res.status} ${text}` };
     return { ok: true, error: null };
   } catch (e: any) {
     return { ok: false, error: e.message };
