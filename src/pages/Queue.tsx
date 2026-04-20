@@ -187,6 +187,25 @@ function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
         <Button onClick={saveReminder} disabled={saving || reminder === (s.reminder_date ?? "")}>
           <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
         </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="icon" aria-label="Delete shipment">
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete shipment #{s.order_number}?</AlertDialogTitle>
+              <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteShipment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   );
