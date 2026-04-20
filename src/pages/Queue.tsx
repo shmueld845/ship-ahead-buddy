@@ -8,7 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
-import { Inbox, AlertCircle, Clock, CheckCircle2, Save } from "lucide-react";
+import { Inbox, AlertCircle, Clock, CheckCircle2, Save, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-warning text-warning-foreground hover:bg-warning",
+  processed: "bg-success text-success-foreground hover:bg-success",
+  cancelled: "bg-destructive text-destructive-foreground hover:bg-destructive",
+};
 
 type Shipment = {
   id: string;
@@ -21,7 +31,7 @@ type Shipment = {
   created_at: string;
 };
 
-const STATUSES = ["pending", "processing", "shipped", "cancelled"];
+const STATUSES = ["pending", "processed", "cancelled"];
 
 export default function Queue() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -38,7 +48,7 @@ export default function Queue() {
       .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at")
       .order("ship_date", { ascending: true });
     if (filter === "due") {
-      q = q.in("status", ["pending", "processing"]);
+      q = q.in("status", ["pending"]);
     }
     const { data, error } = await q;
     setLoading(false);
@@ -119,6 +129,13 @@ function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
     onChange();
   };
 
+  const deleteShipment = async () => {
+    const { error } = await supabase.from("shipments").delete().eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Shipment deleted");
+    onChange();
+  };
+
   return (
     <Card className="p-5 space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -135,7 +152,7 @@ function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
                 <AlertCircle className="w-3 h-3 mr-1" /> Reminder due
               </Badge>
             )}
-            <Badge variant="secondary" className="capitalize">{s.status}</Badge>
+            <Badge className={`capitalize ${STATUS_STYLES[s.status] ?? "bg-secondary text-secondary-foreground"}`}>{s.status}</Badge>
           </div>
           {s.customer && <p className="text-sm text-muted-foreground">{s.customer}</p>}
           <p className="text-sm mt-1">
@@ -170,6 +187,25 @@ function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
         <Button onClick={saveReminder} disabled={saving || reminder === (s.reminder_date ?? "")}>
           <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
         </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="icon" aria-label="Delete shipment">
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete shipment #{s.order_number}?</AlertDialogTitle>
+              <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteShipment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   );

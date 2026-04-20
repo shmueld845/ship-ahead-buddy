@@ -81,7 +81,12 @@ function ShipmentRow({ s }: { s: Shipment }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-mono font-semibold">#{s.order_number}</span>
-            <Badge variant="secondary" className="capitalize">{s.status}</Badge>
+            <Badge className={`capitalize ${
+              s.status === "pending" ? "bg-warning text-warning-foreground hover:bg-warning" :
+              s.status === "processed" ? "bg-success text-success-foreground hover:bg-success" :
+              s.status === "cancelled" ? "bg-destructive text-destructive-foreground hover:bg-destructive" :
+              "bg-secondary text-secondary-foreground"
+            }`}>{s.status}</Badge>
           </div>
           {s.customer && <p className="text-sm text-muted-foreground">{s.customer}</p>}
           <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
