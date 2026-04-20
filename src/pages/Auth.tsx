@@ -57,26 +57,26 @@ export default function Auth() {
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="hidden lg:flex flex-col justify-between p-12 text-primary-foreground"
         style={{ background: "var(--gradient-hero)" }}>
-        <div className="flex items-center gap-2 font-semibold text-lg">
-          <div className="w-9 h-9 rounded-md bg-accent text-accent-foreground grid place-items-center">
-            <Package className="w-5 h-5" />
-          </div>
-          ShipQueue
+        <div className="bg-white/95 rounded-lg p-4 self-start shadow-md">
+          <img src={logo} alt="Tiger Medical" className="h-14 w-auto" />
         </div>
         <div>
           <h1 className="text-4xl font-bold leading-tight mb-3">
             Future-dated shipments,<br />never missed.
           </h1>
-          <p className="text-primary-foreground/70 text-lg max-w-md">
+          <p className="text-primary-foreground/80 text-lg max-w-md">
             Reps log shipments with vendor lead times. Dan gets pinged the moment each
             line is ready to process.
           </p>
         </div>
-        <p className="text-sm text-primary-foreground/60">A bridge until the ERP catches up.</p>
+        <p className="text-sm text-primary-foreground/70">A bridge until the ERP catches up.</p>
       </div>
 
       <div className="flex items-center justify-center p-6">
         <Card className="w-full max-w-md p-8">
+          <div className="lg:hidden mb-6 flex justify-center">
+            <img src={logo} alt="Tiger Medical" className="h-14 w-auto" />
+          </div>
           <h2 className="text-2xl font-semibold mb-1">Welcome</h2>
           <p className="text-sm text-muted-foreground mb-6">Sign in to manage shipments</p>
           <Tabs defaultValue="signin">
