@@ -129,6 +129,13 @@ function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
     onChange();
   };
 
+  const deleteShipment = async () => {
+    const { error } = await supabase.from("shipments").delete().eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Shipment deleted");
+    onChange();
+  };
+
   return (
     <Card className="p-5 space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
