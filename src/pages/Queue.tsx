@@ -152,7 +152,7 @@ function QueueRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
                 <AlertCircle className="w-3 h-3 mr-1" /> Reminder due
               </Badge>
             )}
-            <Badge variant="secondary" className="capitalize">{s.status}</Badge>
+            <Badge className={`capitalize ${STATUS_STYLES[s.status] ?? "bg-secondary text-secondary-foreground"}`}>{s.status}</Badge>
           </div>
           {s.customer && <p className="text-sm text-muted-foreground">{s.customer}</p>}
           <p className="text-sm mt-1">
