@@ -8,7 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
-import { Inbox, AlertCircle, Clock, CheckCircle2, Save } from "lucide-react";
+import { Inbox, AlertCircle, Clock, CheckCircle2, Save, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-warning text-warning-foreground hover:bg-warning",
+  processed: "bg-success text-success-foreground hover:bg-success",
+  cancelled: "bg-destructive text-destructive-foreground hover:bg-destructive",
+};
 
 type Shipment = {
   id: string;
