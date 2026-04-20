@@ -4,48 +4,50 @@
 
 @layer base {
   :root {
-    --background: 220 30% 97%;
-    --foreground: 222 47% 11%;
+    --background: 210 25% 98%;
+    --foreground: 212 45% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 212 45% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 212 45% 15%;
 
-    --primary: 222 47% 16%;
-    --primary-foreground: 210 40% 98%;
-    --primary-glow: 222 47% 26%;
+    /* Tiger Medical navy */
+    --primary: 212 55% 22%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 212 55% 32%;
 
-    --secondary: 220 20% 94%;
-    --secondary-foreground: 222 47% 16%;
+    --secondary: 210 25% 94%;
+    --secondary-foreground: 212 55% 22%;
 
-    --muted: 220 20% 94%;
-    --muted-foreground: 220 12% 45%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 212 15% 45%;
 
-    --accent: 38 92% 50%;
-    --accent-foreground: 222 47% 11%;
+    /* Tiger Medical cyan */
+    --accent: 194 100% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 142 71% 38%;
+    --success: 145 65% 38%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning: 32 95% 50%;
+    --warning-foreground: 0 0% 100%;
 
     --destructive: 0 75% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 88%;
-    --input: 220 16% 88%;
-    --ring: 222 47% 16%;
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 194 100% 45%;
 
     --radius: 0.625rem;
 
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 16%), hsl(222 47% 26%));
-    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%), hsl(28 92% 55%));
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-md: 0 4px 12px -2px hsl(222 47% 11% / 0.08);
-    --shadow-lg: 0 12px 32px -8px hsl(222 47% 11% / 0.15);
+    --gradient-hero: linear-gradient(135deg, hsl(212 55% 22%), hsl(194 100% 45%));
+    --gradient-accent: linear-gradient(135deg, hsl(194 100% 45%), hsl(194 100% 55%));
+    --shadow-sm: 0 1px 2px 0 hsl(212 45% 15% / 0.05);
+    --shadow-md: 0 4px 12px -2px hsl(212 45% 15% / 0.08);
+    --shadow-lg: 0 12px 32px -8px hsl(212 45% 15% / 0.15);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
