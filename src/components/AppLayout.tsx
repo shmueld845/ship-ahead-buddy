@@ -1,8 +1,9 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Package, LogOut, LayoutDashboard, Plus, Inbox, Settings } from "lucide-react";
+import { LogOut, LayoutDashboard, Plus, Inbox, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/tiger-medical-logo.png";
 
 export default function AppLayout() {
   const { user, roles, isAdmin, isProcessor, signOut, loading } = useAuth();
