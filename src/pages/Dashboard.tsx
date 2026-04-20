@@ -5,8 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Package, Calendar, AlertCircle, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Plus, Package, Calendar, AlertCircle, Clock, Trash2 } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
+import { toast } from "sonner";
 
 type Shipment = {
   id: string;
@@ -17,6 +23,13 @@ type Shipment = {
   reminder_date: string | null;
   status: string;
   created_at: string;
+};
+
+const STATUSES = ["pending", "processed", "cancelled"];
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-warning text-warning-foreground hover:bg-warning",
+  processed: "bg-success text-success-foreground hover:bg-success",
+  cancelled: "bg-destructive text-destructive-foreground hover:bg-destructive",
 };
 
 export default function Dashboard() {
@@ -63,30 +76,41 @@ export default function Dashboard() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {shipments.map((s) => <ShipmentRow key={s.id} s={s} />)}
+          {shipments.map((s) => <ShipmentRow key={s.id} s={s} onChange={load} />)}
         </div>
       )}
     </div>
   );
 }
 
-function ShipmentRow({ s }: { s: Shipment }) {
+function ShipmentRow({ s, onChange }: { s: Shipment; onChange: () => void }) {
   const today = new Date();
   const ship = parseISO(s.ship_date);
   const days = differenceInDays(ship, today);
 
+  const updateStatus = async (status: string) => {
+    const { error } = await supabase.from("shipments").update({ status }).eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Status updated");
+    onChange();
+  };
+
+  const deleteShipment = async () => {
+    const { error } = await supabase.from("shipments").delete().eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Shipment deleted");
+    onChange();
+  };
+
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-mono font-semibold">#{s.order_number}</span>
-            <Badge className={`capitalize ${
-              s.status === "pending" ? "bg-warning text-warning-foreground hover:bg-warning" :
-              s.status === "processed" ? "bg-success text-success-foreground hover:bg-success" :
-              s.status === "cancelled" ? "bg-destructive text-destructive-foreground hover:bg-destructive" :
-              "bg-secondary text-secondary-foreground"
-            }`}>{s.status}</Badge>
+            <Badge className={`capitalize ${STATUS_STYLES[s.status] ?? "bg-secondary text-secondary-foreground"}`}>
+              {s.status}
+            </Badge>
           </div>
           {s.customer && <p className="text-sm text-muted-foreground">{s.customer}</p>}
           <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
@@ -106,6 +130,35 @@ function ShipmentRow({ s }: { s: Shipment }) {
             )}
           </div>
           {s.notes && <p className="mt-2 text-sm text-muted-foreground italic">"{s.notes}"</p>}
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={s.status} onValueChange={updateStatus}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {STATUSES.map((st) => (
+                <SelectItem key={st} value={st} className="capitalize">{st}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Delete shipment">
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete shipment #{s.order_number}?</AlertDialogTitle>
+                <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteShipment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </Card>
