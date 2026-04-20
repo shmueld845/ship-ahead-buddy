@@ -31,7 +31,7 @@ type Shipment = {
   created_at: string;
 };
 
-const STATUSES = ["pending", "processing", "shipped", "cancelled"];
+const STATUSES = ["pending", "processed", "cancelled"];
 
 export default function Queue() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
