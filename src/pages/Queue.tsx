@@ -48,7 +48,7 @@ export default function Queue() {
       .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at")
       .order("ship_date", { ascending: true });
     if (filter === "due") {
-      q = q.in("status", ["pending", "processing"]);
+      q = q.in("status", ["pending"]);
     }
     const { data, error } = await q;
     setLoading(false);
