@@ -26,11 +26,9 @@ export default function AppLayout() {
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-card">
         <div className="container flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 font-semibold">
-            <div className="w-8 h-8 rounded-md bg-primary text-primary-foreground grid place-items-center">
-              <Package className="w-4 h-4" />
-            </div>
-            <span>ShipQueue</span>
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="Tiger Medical" className="h-8 w-auto" width={1584} height={672} />
+            <span className="hidden sm:inline text-sm text-muted-foreground border-l pl-3">ShipQueue</span>
           </Link>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:inline">
