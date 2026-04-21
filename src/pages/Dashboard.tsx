@@ -27,7 +27,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin, isProcessor } = useAuth();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,12 +38,18 @@ export default function Dashboard() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from("shipments")
       .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at")
-      .eq("created_by", user!.id)
       .in("status", ["pending", "processing"])
       .order("ship_date", { ascending: true });
+
+    // Reps only see their own; admins/processors see all (RLS also enforces this)
+    if (!isAdmin && !isProcessor) {
+      query = query.eq("created_by", user!.id);
+    }
+
+    const { data } = await query;
     setShipments((data as any) ?? []);
     setLoading(false);
   };
