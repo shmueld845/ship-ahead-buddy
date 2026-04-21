@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { z } from "zod";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Pencil } from "lucide-react";
 
 type Profile = { user_id: string; email: string; display_name: string | null };
 type RoleRow = { user_id: string; role: "admin" | "processor" | "rep" };
@@ -25,6 +26,12 @@ export default function Settings() {
   const [invPassword, setInvPassword] = useState("");
   const [invRoles, setInvRoles] = useState<string[]>(["rep"]);
   const [inviting, setInviting] = useState(false);
+
+  // Edit user dialog
+  const [editUser, setEditUser] = useState<Profile | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -87,6 +94,31 @@ export default function Settings() {
     setInvName("");
     setInvPassword("");
     setInvRoles(["rep"]);
+    load();
+  };
+
+  const openEdit = (p: Profile) => {
+    setEditUser(p);
+    setEditName(p.display_name ?? "");
+    setEditEmail(p.email);
+  };
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
+    const parsedEmail = z.string().trim().email().safeParse(editEmail);
+    if (!parsedEmail.success) return toast.error("Invalid email");
+    if (!editName.trim()) return toast.error("Name is required");
+
+    setEditSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: editName.trim(), email: parsedEmail.data })
+      .eq("user_id", editUser.user_id);
+    setEditSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("User updated");
+    setEditUser(null);
     load();
   };
 
@@ -161,9 +193,14 @@ export default function Settings() {
             const userRoles = rolesByUser[p.user_id] ?? [];
             return (
               <div key={p.user_id} className="flex items-center justify-between gap-4 flex-wrap p-3 rounded-md bg-secondary/40">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{p.display_name || p.email}</p>
-                  <p className="text-xs text-muted-foreground truncate">{p.email}</p>
+                <div className="min-w-0 flex items-center gap-2">
+                  <div>
+                    <p className="font-medium truncate">{p.display_name || p.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">{p.email}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openEdit(p)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {(["rep", "processor", "admin"] as const).map((r) => {
@@ -185,6 +222,29 @@ export default function Settings() {
           })}
         </div>
       </Card>
+
+      {/* Edit user dialog */}
+      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit user</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Display name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" required />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email" required />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
+              <Button type="submit" disabled={editSaving}>{editSaving ? "Saving…" : "Save"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
