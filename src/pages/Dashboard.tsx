@@ -42,27 +42,31 @@ export default function Dashboard() {
     setLoading(true);
     let query = supabase
       .from("shipments")
-      .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at, created_by, profiles!shipments_created_by_fkey(display_name, email)")
+      .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at, created_by")
       .in("status", ["pending", "processing"])
       .order("ship_date", { ascending: true });
 
-    // Reps only see their own; admins/processors see all
     if (!isAdmin && !isProcessor) {
       query = query.eq("created_by", user!.id);
     }
 
-    const { data, error } = await query;
-    if (error) {
-      // Fallback: join may fail if no FK, try without join
-      const { data: fallback } = await supabase
-        .from("shipments")
-        .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at, created_by")
-        .in("status", ["pending", "processing"])
-        .order("ship_date", { ascending: true });
-      setShipments((fallback as any) ?? []);
-    } else {
-      setShipments((data as any) ?? []);
+    const { data } = await query;
+    const rows = (data ?? []) as any[];
+
+    // Fetch creator profiles
+    const creatorIds = [...new Set(rows.map((r) => r.created_by))];
+    let profileMap: Record<string, { display_name: string | null; email: string }> = {};
+    if (creatorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, email")
+        .in("user_id", creatorIds);
+      (profiles ?? []).forEach((p: any) => {
+        profileMap[p.user_id] = { display_name: p.display_name, email: p.email };
+      });
     }
+
+    setShipments(rows.map((r) => ({ ...r, profiles: profileMap[r.created_by] ?? null })));
     setLoading(false);
   };
 
