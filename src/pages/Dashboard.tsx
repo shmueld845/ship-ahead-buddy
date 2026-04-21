@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Package, Calendar, AlertCircle, Clock } from "lucide-react";
+import { Plus, Package, Calendar, AlertCircle, Clock, User } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 
 type Shipment = {
@@ -17,6 +17,8 @@ type Shipment = {
   reminder_date: string | null;
   status: string;
   created_at: string;
+  created_by: string;
+  profiles: { display_name: string | null; email: string } | null;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -27,39 +29,66 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { user, isAdmin, isProcessor } = useAuth();
+  const { user, roles, isAdmin, isProcessor } = useAuth();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || roles.length === 0) return;
     load();
-  }, [user]);
+  }, [user, roles]);
 
   const load = async () => {
     setLoading(true);
     let query = supabase
       .from("shipments")
-      .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at")
+      .select("id, order_number, customer, notes, ship_date, reminder_date, status, created_at, created_by")
       .in("status", ["pending", "processing"])
       .order("ship_date", { ascending: true });
 
-    // Reps only see their own; admins/processors see all (RLS also enforces this)
     if (!isAdmin && !isProcessor) {
       query = query.eq("created_by", user!.id);
     }
 
     const { data } = await query;
-    setShipments((data as any) ?? []);
+    const rows = (data ?? []) as any[];
+
+    // Fetch creator profiles
+    const creatorIds = [...new Set(rows.map((r) => r.created_by))];
+    let profileMap: Record<string, { display_name: string | null; email: string }> = {};
+    if (creatorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, email")
+        .in("user_id", creatorIds);
+      (profiles ?? []).forEach((p: any) => {
+        profileMap[p.user_id] = { display_name: p.display_name, email: p.email };
+      });
+    }
+
+    setShipments(rows.map((r) => ({ ...r, profiles: profileMap[r.created_by] ?? null })));
     setLoading(false);
+  };
+
+  const getCreatorLabel = (s: Shipment) => {
+    if (s.profiles) {
+      return s.profiles.display_name || s.profiles.email;
+    }
+    return s.created_by === user?.id ? "You" : "Unknown";
   };
 
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My shipments</h1>
-          <p className="text-muted-foreground mt-1">Active orders you've logged. Processed orders move to the queue archive.</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isAdmin || isProcessor ? "All shipments" : "My shipments"}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {isAdmin || isProcessor
+              ? "Active orders across all reps."
+              : "Active orders you've logged. Processed orders move to the archive."}
+          </p>
         </div>
         <Button asChild size="lg">
           <Link to="/new"><Plus className="w-4 h-4 mr-2" /> New shipment</Link>
@@ -104,6 +133,10 @@ export default function Dashboard() {
                       <AlertCircle className="w-4 h-4" /> Awaiting reminder
                     </span>
                   )}
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <User className="w-4 h-4" />
+                    {s.created_by === user?.id ? "You" : getCreatorLabel(s)}
+                  </span>
                 </div>
                 {s.notes && <p className="mt-2 text-sm text-muted-foreground italic">"{s.notes}"</p>}
               </Card>
